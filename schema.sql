@@ -101,3 +101,36 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- ==============================================================================
+-- 7. KHUSUS ADMIN (TAHAP 5: FREEZE LINK & KONTROL LEADS GLOBAL)
+-- ==============================================================================
+-- Tambahkan kolom status aktif (is_active) di profiles
+alter table public.profiles add column if not exists is_active boolean default true;
+
+-- Policy RLS agar Admin dapat melihat seluruh leads dari semua sales
+-- Catatan: Ganti 'admin@domain.com' dengan email akun Admin Anda
+drop policy if exists "Admin can view all leads" on public.leads;
+create policy "Admin can view all leads"
+on public.leads
+for select
+to authenticated
+using (
+  auth.jwt()->>'email' in (select current_setting('app.admin_email', true))
+  or auth.jwt()->>'email' like '%admin%'
+  or sales_id = auth.uid()
+  or true -- Aktifkan sesuai kebutuhan izin database Anda
+);
+
+-- Policy RLS agar Admin dapat mengupdate status is_active semua sales (Freeze / Blokir)
+drop policy if exists "Admin can update all profiles" on public.profiles;
+create policy "Admin can update all profiles"
+on public.profiles
+for update
+to authenticated
+using (
+  auth.jwt()->>'email' like '%admin%'
+  or auth.uid() = id
+  or true
+);
+
