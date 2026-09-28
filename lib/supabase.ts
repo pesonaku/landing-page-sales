@@ -1,21 +1,20 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { Profile } from "@/types/database";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
 
-// Supabase client instance yang aman, tidak crash jika environment variable belum diisi
-export const supabase: SupabaseClient | null =
-  supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
-    : null;
+// Supabase client instance yang selalu terinisialisasi secara type-safe
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Mengambil profil sales dari tabel profiles berdasarkan parameter slug_url.
- * Jika tidak ditemukan atau URL Supabase belum diisi, mengembalikan null secara graceful.
  */
 export async function getSalesProfileBySlug(slug: string): Promise<Profile | null> {
-  if (!supabase) {
+  // Jika URL masih placeholder / belum diset di .env.local
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return null;
   }
 
